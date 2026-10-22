@@ -1,0 +1,9 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8" /><title>Redirecting…</title></head>
+  <body>
+    <!-- Keep the query and hash: the OIDC result (#code=...&state=...) is processed by the app on "/". -->
+    <script>window.location.replace("/" + window.location.search + window.location.hash);</script>
+    <noscript><a href="/">Continue</a></noscript>
+  </body>
+</html>

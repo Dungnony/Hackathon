@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="SealNote: notes encrypted in the browser with TideCloak. No admin, server or vendor holds the key." />
+    <title>SealNote - zero-trust encrypted notes</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <section id="loading" class="center" role="status"><div class="spinner"></div><p class="muted">Connecting to TideCloak…</p></section>
+
+      <!-- Shown when tidecloak.json is still the placeholder -->
+      <section id="setup" class="center hidden">
+        <div class="card wide">
+          <h2>⚙️ TideCloak is not configured yet</h2>
+          <p class="muted">Problems found in <code>tidecloak.json</code>:</p>
+          <ul id="config-problems" class="problems"></ul>
+          <p class="muted">To connect the app to your TideCloak server:</p>
+          <ol class="steps">
+            <li>Run TideCloak: <code>docker compose up -d</code> (serves <code>http://localhost:8080</code>).</li>
+            <li>Provision the realm with Tide's <code>tcinit.sh</code> and <code>init/realm.json</code> (README, Setup step 2).</li>
+            <li>Open the enrollment link it prints and create your Tide account.</li>
+            <li>The script writes <b><code>tidecloak.json</code></b>; reload this page.</li>
+          </ol>
+          <div class="row wrap">
+            <a class="btn primary" href="?demo=1">Preview in demo mode</a>
+            <span class="muted small">Demo mode uses local AES-GCM only. It is a UI preview, not TideCloak.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Shown when the server cannot be reached -->
+      <section id="error" class="center hidden">
+        <div class="card wide" role="alert">
+          <h2>Cannot reach TideCloak</h2>
+          <p class="muted">Check that the server is running, that <code>auth-server-url</code> in <code>tidecloak.json</code> is correct, and that this origin is in the client's <i>Web origins</i>.</p>
+          <pre id="error-detail" class="raw"></pre>
+          <div class="row">
+            <button id="retry-btn" class="btn primary" type="button">Retry</button>
+            <a class="btn ghost" href="?demo=1">Demo mode</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="login" class="landing hidden">
+        <header class="landing-nav">
+            <div class="brand">
+              <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true">
+                <defs><linearGradient id="logo-grad-login" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b6cff"/><stop offset="1" stop-color="#4a2fd6"/></linearGradient></defs>
+                <rect width="32" height="32" rx="9" fill="url(#logo-grad-login)"/>
+                <path d="M10.5 6.5h7.6l4.4 4.4v12.6a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2v-15a2 2 0 0 1 2-2z" fill="#fff"/>
+                <path d="M18.1 6.5v3.4a1 1 0 0 0 1 1h3.4z" fill="#d6ccff"/>
+                <path d="M11.5 12.5h4.5M11.5 15.5h8M11.5 18.5h3" stroke="#cfc4ff" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="20.5" cy="21.5" r="5" fill="#5b3be0" stroke="#fff" stroke-width="1.8"/>
+                <circle cx="20.5" cy="20.6" r="1.35" fill="#fff"/>
+                <path d="M19.85 21.2h1.3l.45 2.4h-2.2z" fill="#fff"/>
+              </svg>
+              <span>SealNote</span>
+            </div>
+            <span class="nav-pill">Built with TideCloak</span>
+        </header>
+        <div class="hero">
+          <span class="eyebrow"><span class="badge-new">Zero-trust</span> Private notes, encrypted in your browser</span>
+          <h1>Notes nobody<br />else can open</h1>
+          <p class="lead">Every note is encrypted before it leaves your browser. No admin, server, or vendor ever holds a key that can read it.</p>
+          <label for="demo-name" class="sr-only">Demo username</label>
+          <input id="demo-name" class="hidden" placeholder="Pick a demo username" maxlength="30" autocomplete="off" />
+          <button id="login-btn" class="btn primary big" type="button">Sign in with TideCloak</button>
+          <p class="auth-note">SealNote never sees or stores a password.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-row">
+            <span class="feature-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+            <span class="feature-label">End-to-end encryption</span>
+            <span class="status">✓ Always on</span>
+          </div>
+          <div class="feature-row">
+            <span class="feature-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span>
+            <span class="feature-label">Tag-based access <code>_tide_note.selfdecrypt</code></span>
+            <span class="status">✓ Always on</span>
+          </div>
+          <div class="feature-row">
+            <span class="feature-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v13c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-13"/><path d="M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></svg></span>
+            <span class="feature-label">Storage only ever sees ciphertext</span>
+            <span class="status">✓ Always on</span>
+          </div>
+        </div>
+      </section>
+
+      <main id="dashboard" class="hidden">
+        <div id="demo-banner" class="banner hidden" role="note">DEMO MODE: local AES-GCM preview. Configure <code>tidecloak.json</code> to use real TideCloak encryption.</div>
+        <header class="topbar">
+          <div class="brand">
+            <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true">
+              <defs><linearGradient id="logo-grad-topbar" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b6cff"/><stop offset="1" stop-color="#4a2fd6"/></linearGradient></defs>
+              <rect width="32" height="32" rx="9" fill="url(#logo-grad-topbar)"/>
+              <path d="M10.5 6.5h7.6l4.4 4.4v12.6a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2v-15a2 2 0 0 1 2-2z" fill="#fff"/>
+              <path d="M18.1 6.5v3.4a1 1 0 0 0 1 1h3.4z" fill="#d6ccff"/>
+              <path d="M11.5 12.5h4.5M11.5 15.5h8M11.5 18.5h3" stroke="#cfc4ff" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="20.5" cy="21.5" r="5" fill="#5b3be0" stroke="#fff" stroke-width="1.8"/>
+              <circle cx="20.5" cy="20.6" r="1.35" fill="#fff"/>
+              <path d="M19.85 21.2h1.3l.45 2.4h-2.2z" fill="#fff"/>
+            </svg>
+            <span>SealNote</span>
+          </div>
+          <div class="who">
+            <span id="provider" class="pill muted"></span>
+            <span id="user-name" class="pill"></span>
+            <span id="token-exp" class="muted small"></span>
+            <button id="logout-btn" class="btn ghost" type="button">Log out</button>
+          </div>
+        </header>
+
+        <div class="grid">
+          <section class="card" aria-labelledby="form-title">
+            <h2 id="form-title">New secret note</h2>
+            <form id="note-form">
+              <label for="note-title" class="sr-only">Title</label>
+              <input id="note-title" placeholder="Title (stored encrypted too)" maxlength="80" required />
+              <label for="note-body" class="sr-only">Note</label>
+              <textarea id="note-body" rows="6" maxlength="5000" placeholder="Write something only you should read…" required></textarea>
+              <div class="row between wrap">
+                <label class="check"><input type="checkbox" id="tag-extra" /> Also require <code>sensitive</code> tag</label>
+                <div class="row">
+                  <button id="cancel-edit" class="btn ghost hidden" type="button">Cancel</button>
+                  <button id="submit-btn" class="btn primary" type="submit">Encrypt &amp; save</button>
+                </div>
+              </div>
+            </form>
+            <p id="form-msg" class="msg" role="status" aria-live="polite"></p>
+            <details class="hint">
+              <summary>Why do I get a permission error?</summary>
+              <p>Assign yourself the roles <code>_tide_note.selfencrypt</code> and <code>_tide_note.selfdecrypt</code> (and <code>_tide_sensitive.selfencrypt / selfdecrypt</code> for the extra tag) in the TideCloak admin console, then log out and in again.</p>
+            </details>
+          </section>
+
+          <section class="card" aria-labelledby="vault-title">
+            <div class="row between wrap">
+              <h2 id="vault-title">My vault <span id="count" class="pill">0</span></h2>
+              <div class="row wrap">
+                <label for="search" class="sr-only">Search decrypted titles</label>
+                <input id="search" class="search" placeholder="Search decrypted titles…" />
+                <label for="tag-filter" class="sr-only">Filter by tag</label>
+                <select id="tag-filter">
+                  <option value="">All tags</option>
+                  <option value="note">note</option>
+                  <option value="sensitive">sensitive</option>
+                </select>
+              </div>
+            </div>
+            <div class="row wrap toolbar">
+              <button id="decrypt-all" class="btn ghost" type="button">Decrypt all</button>
+              <button id="export-btn" class="btn ghost" type="button" title="Download an encrypted backup (ciphertext only)">Export backup</button>
+              <button id="import-btn" class="btn ghost" type="button">Import backup</button>
+              <input id="import-input" type="file" accept="application/json,.json" class="hidden" />
+              <span class="spacer"></span>
+              <label class="check" for="lock-select">Auto-lock
+                <select id="lock-select">
+                  <option value="0">Off</option>
+                  <option value="1">1 min</option>
+                  <option value="5">5 min</option>
+                  <option value="15">15 min</option>
+                </select>
+              </label>
+            </div>
+            <div id="notes" class="notes"></div>
+            <p id="empty" class="muted center-text"></p>
+          </section>
+        </div>
+
+        <section class="card" aria-labelledby="access-title">
+          <div class="row between wrap">
+            <h2 id="access-title">Your access</h2>
+            <span id="access-source" class="muted small"></span>
+          </div>
+          <div id="access" class="access"></div>
+        </section>
+
+        <section class="card" aria-labelledby="raw-title">
+          <h2 id="raw-title">What the storage sees</h2>
+          <p class="muted small">This is exactly what is persisted: ciphertext and tags only. No plaintext, no keys.</p>
+          <pre id="raw" class="raw">[]</pre>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+# Local TideCloak sandbox (Tide's staging image). Start with:  docker compose up -d
+# Admin console: http://localhost:8080  (admin / password)  - change the password outside of local dev!
+services:
+  tidecloak:
+    image: tideorg/tidecloak-stg-dev:latest
+    container_name: tidecloak
+    ports:
+      - "8080:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: password
+    restart: unless-stopped
